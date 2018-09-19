@@ -1,0 +1,386 @@
+/* COLORS */
+:root {
+  --red: #e16a6b;
+  --black: #1d1d1d;
+  --offwhite: #f5f6f7;
+  --darkwhite: #e1e4e7;
+  --lightgrey: #e3e5e8;
+  --grey: #b2b3b7;
+  --darkgrey: #757c8e;
+  --darkergrey: #383d47;
+  --darkestgrey: #2a3039;
+  --blue: #6294dc;
+  --aqua: #97b2b3;
+}
+
+/* GLOBALS */
+* {
+  font-family: 'Ubuntu', sans-serif;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+html,
+body {
+  overflow: hidden;
+}
+
+/* WRAPPER */
+.wrapper {
+  background-color: var(--aqua);
+  display: grid;
+  grid-template-areas:
+    "taskbar taskbar"
+    "sidebar desktop";
+  height: 100vh;
+  width: 100vw;
+}
+
+/* TASKBAR */
+
+.taskbar {
+  background-color: var(--darkestgrey);
+  color: white;
+  display: flex;
+  font-size: 0.9rem;
+  font-weight: 300;
+  grid-area: taskbar;
+  height: 30px;
+  top: 0;
+  width: 100%;
+  z-index: 500;
+}
+
+.taskbar>* {
+  /* outline: 1px dashed red; */
+}
+
+/* MENU BUTTON */
+
+.menu__button {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  width: 60px;
+}
+
+.menu__button:active {
+  background-color: var(--darkgrey);
+}
+
+.menu__button i {
+  transition: all 250ms;
+}
+
+.menu__button:hover i {
+  transform: rotateZ(180deg);
+}
+
+/* MENUBAR */
+
+.menubar {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 20px;
+  width: calc(100% - 60px);
+}
+
+/* SIDEBAR */
+
+.sidebar {
+  background-color: var(--darkergrey);
+  display: flex;
+  flex-direction: column;
+  grid-area: sidebar;
+  height: calc(100vh - 30px);
+  width: 60px;
+  z-index: 500;
+}
+
+.open__item {
+  align-items: center;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  height: 40px;
+  justify-content: center;
+}
+
+.open__item * {
+  pointer-events: none;
+}
+
+.open__item:hover {
+  background-color: var(--darkestgrey);
+}
+
+.open__item:active {
+  background-color: var(--darkgrey);
+}
+
+.open__item:hover .item__icon {
+  /* font-size: 1.1rem; */
+}
+
+.item__icon {
+  font-size: 0.9rem;
+  transition: all 100ms;
+}
+
+.indicator--active {
+  background-color: var(--blue);
+  height: 2px;
+  margin-top: 3px;
+  width: 0.6rem;
+}
+
+/* DESKTOP */
+
+.desktop {
+  grid-area: desktop;
+  height: calc(100vh - 30px);
+  width: calc(100vw - 60px);
+}
+
+/* MENU */
+
+.menu {
+  background-color: var(--darkestgrey);
+  border-radius: 0 0 5px 0;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, .3);
+  display: grid;
+  grid-auto-flow: row;
+  grid-gap: 5px;
+  padding: 10px;
+  position: fixed;
+  width: 300px;
+  transition: all 100ms;
+  z-index: 200;
+}
+
+.menu--hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.menu__item {
+  background-color: var(--darkergrey);
+  border-radius: 5px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  height: 60px;
+  width: 100%;
+}
+
+.menu__item:hover {
+  background-color: var(--darkgrey);
+}
+
+.menu__icon {
+  align-items: center;
+  display: flex;
+  height: 60px;
+  justify-content: center;
+  width: 60px;
+}
+
+.menu__title {
+  align-items: center;
+  display: flex;
+  height: 100%;
+}
+
+/* WINDOWS */
+
+.window {
+  background-color: var(--lightgrey);
+  border-radius: 7.5px;
+  height: 300px;
+  left: 65px;
+  position: absolute;
+  top: 35px;
+  width: 500px;
+  transform-origin: right center;
+  transition: transform 250ms, opacity 200ms;
+  overflow: hidden;
+}
+
+.window__content {
+  align-items: center;
+  background-color: white;
+  background-size: cover;
+  background-position: center;
+  border-radius: 5px 5px 5px 5px;
+  display: flex;
+  height: calc(100% - 48px);
+  justify-content: center;
+  margin: 0 auto;
+  width: calc(100% - 16px);
+  position: relative;
+  z-index: 500;
+}
+
+.window__content * {
+  color: var(--darkgrey);
+  font-size: 2rem;
+}
+
+.active__window {
+  box-shadow: 0 5px 10px rgba(0, 0, 0, .1);
+  z-index: 100;
+}
+
+.inactive__window {
+  opacity: 0.75;
+  z-index: 90;
+}
+
+.maximized {
+  height: calc(100vh - 40px);
+  width: calc(100vw - 70px);
+}
+
+.minimized {
+  transform: rotateY(-90deg);
+}
+
+.closed {
+  opacity: 0;
+  transform: scale(.75);
+  transform-origin: center center;
+}
+
+.title__bar {
+  align-items: center;
+  background-color: var(--lightgrey);
+  border-radius: 7.5px 7.5px 0 0;
+  display: flex;
+  height: 40px;
+  justify-content: space-between;
+  position: relative;
+  z-index: 300;
+}
+
+.controls {
+  align-content: center;
+  border-left: 1px solid var(--grey);
+  display: grid;
+  grid-auto-flow: column;
+  grid-gap: 20px;
+  justify-items: center;
+  padding-left: 15px;
+  pointer-events: none;
+  margin-right: 22.5px;
+  width: 80px;
+}
+
+.control {
+  color: var(--darkgrey);
+  cursor: pointer;
+  font-size: 0.95rem;
+  pointer-events: all;
+}
+
+.window__title {
+  color: var(--darkgrey);
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  margin-left: 10px;
+  pointer-events: none;
+}
+
+.maximizer {
+  transform: rotateZ(45deg);
+}
+
+.close {
+  color: var(--red);
+}
+
+/* RESIZERS */
+
+.window__resizer {
+  background-color: var(--lightgrey);
+  height: 20px;
+  position: absolute;
+  width: 20px;
+  z-index: 400;
+}
+
+.window__resizer--corner {
+  bottom: 0;
+}
+
+.window__resizer--corner--left {
+  border-radius: 0px 0px 0px 5px;
+  cursor: nesw-resize;
+  left: 0;
+}
+
+.window__resizer--corner--right {
+  border-radius: 0px 0 5px 0;
+  cursor: nwse-resize;
+  right: 0;
+}
+
+.window__resizer--bottom {
+  bottom: 0;
+  cursor: ns-resize;
+  left: calc(50% - 50% + 20px);
+  width: calc(100% - 40px);
+}
+
+.window__resizer--side {
+  cursor: ew-resize;
+  height: calc(100% - 33px);
+  top: 13px;
+  width: 8px;
+}
+
+.window__resizer--left {
+  left: 0;
+}
+
+.window__resizer--right {
+  right: 0;
+}
+
+
+.window__resizer--corner--top {
+  height: 13px;
+  top: 0;
+  z-index: 600;
+}
+
+.window__resizer--corner--left--top {
+  border-radius: 5px 0px 0px 0;
+  cursor: nwse-resize;
+  left: 0;
+  top: 0px;
+  z-index: 600;
+}
+
+.window__resizer--corner--right--top {
+  border-radius: 0px 0 5px 0;
+  cursor: nesw-resize;
+  right: 0;
+  top: 0;
+  z-index: 600;
+}
+
+.window__resizer--top {
+  cursor: ns-resize;
+  height: 8px;
+  left: calc(50% - 50% + 20px);
+  width: calc(100% - 40px);
+  top: 0px;
+  z-index: 600;
+}
