@@ -360,10 +360,10 @@ function maximize(event) {
     selectedWindow.style.width =
       windowSettings[selectedWindow.id].position.w + "px";
   }
-  selectedWindow.childNodes[3].childNodes[1].innerText =
-    selectedWindow.clientWidth;
-  selectedWindow.childNodes[3].childNodes[5].innerText =
-    selectedWindow.clientHeight;
+  // selectedWindow.childNodes[3].childNodes[1].innerText =
+  //   selectedWindow.clientWidth;
+  // selectedWindow.childNodes[3].childNodes[5].innerText =
+  //   selectedWindow.clientHeight;
 }
 
 function minimize(event) {
