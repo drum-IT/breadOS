@@ -1,86 +1,124 @@
-// VARIABLES
-let dragged;
-let dragging = false;
-let resizing = false;
-let resized;
-let mousePositionResize;
-let resizeType;
-let offsetResize = [0, 0];
-let mousePosition;
-let offset = [0, 0];
-const windowSettings = {};
-let resizedDimensions = {};
+"use strict";
 
-// GET ELEMENTS
-let resizers = document.querySelectorAll(".window__resizer");
-const desktop = document.getElementById("desktop");
-let maximizers = document.querySelectorAll(".maximizer");
-const sidebar = document.getElementById("sidebar");
-const taskbar = document.getElementById("taskbar");
-let windows = document.querySelectorAll(".window");
-const newWindowButton = document.getElementById("new__window");
-let closers = document.querySelectorAll(".close");
-const menu = document.getElementById("menu");
-const menuButton = document.getElementById("menu__button");
+// APP STATE
+const osState = {
+  dragged: undefined, // the DOM element that is being dragged
+  dragging: false, // currently dragging a window?
+  resizing: false, // currently resizing a window?
+  resized: undefined, // the DOM element that is being resized
+  mousePositionResize: undefined, // mouse position for window resize
+  resizeType: undefined, // type of resize. from the corners, side, top, bottom, etc
+  offsetResize: [0, 0], // window offset for resize. used to maintain window position when resizing.
+  mousePosition: undefined, // mouse position for drag
+  offset: [0, 0], // window offset for drag
+  windowSettings: {}, // object that stores settings for all active windows.
+  resizedDimensions: {} // stores dimensions for all windows
+};
 
-// EVENT LISTENERS
-desktop.addEventListener("mousemove", handleDrag);
-desktop.addEventListener("mouseup", dragEnd);
+// INTERACTIVE DOM ELEMENTS
+const osNodes = {
+  resizers: document.querySelectorAll(".window__resizer"), // top, side, corner, and bottom resizer elements on each window
+  desktop: document.getElementById("desktop"), // area where all windows live
+  maximizers: document.querySelectorAll(".maximizer"), // maximize/minimize button on each window
+  sidebar: document.getElementById("sidebar"),
+  taskbar: document.getElementById("taskbar"),
+  windows: document.querySelectorAll(".window"),
+  newWindowButton: document.getElementById("new__window"),
+  closers: document.querySelectorAll(".close"),
+  menu: document.getElementById("menu"),
+  menuButton: document.getElementById("menu__button")
+};
 
-sidebar.addEventListener("mousemove", handleDrag);
-sidebar.addEventListener("mouseup", dragEnd);
-
-taskbar.addEventListener("mousemove", handleDrag);
-taskbar.addEventListener("mouseup", dragEnd);
-
-menuButton.addEventListener("click", toggleMenu);
-
+// WHAT DOES THIS DO?
 processWindows();
-
-newWindowButton.addEventListener("click", createNewWindow);
 
 // FUNCTIONS
 
+// INITIALIZERS
+// these run at app startup, or to initialize newly created nodes
+
+// add event listeners to all interactive elements
+// another similar function will be needed for adding event listeners to new windows.
+function initializeEventListeners() {
+  osNodes.desktop.addEventListener("mousemove", handleDrag);
+  osNodes.desktop.addEventListener("mouseup", dragEnd);
+  osNodes.sidebar.addEventListener("mousemove", handleDrag);
+  osNodes.sidebar.addEventListener("mouseup", dragEnd);
+  osNodes.taskbar.addEventListener("mousemove", handleDrag);
+  osNodes.taskbar.addEventListener("mouseup", dragEnd);
+  osNodes.newWindowButton.addEventListener("click", createNewWindow);
+  osNodes.menuButton.addEventListener("click", toggleMenu);
+}
+
+initializeEventListeners();
+
 // MENU FUNCTIONS
+
+// open and close the menu
 function toggleMenu() {
-  menu.classList.toggle("menu--hidden");
+  osNodes.menu.classList.toggle("menu--hidden");
 }
 
 // DRAGGING FUNCTIONS
 
+// process and capture data when dragging starts
 function dragStart(event) {
-  if (event.target.classList.contains("draggable")) {
-    dragged = event.target.parentNode;
+  const selectedTaskbar = event.target; // the taskbar of the window to be dragged
+  const taskbarWindow = event.target.parentNode; // the parent (window) of the taskbar
+  // check to see if user is dragging a draggable element
+  if (selectedTaskbar.classList.contains("draggable")) {
+    // set dragged variable to currently dragging window
+    osState.dragged = taskbarWindow;
+    // check if the newly dragged window is the active one.
     checkActive(event);
-    windows.forEach(window => {
+    // loop through all windows, removing any active classes and adding inactive class
+    // TODO: Target only the currently active window, speed it up
+    osNodes.windows.forEach(window => {
       window.classList.remove("active__window");
       window.classList.add("inactive__window");
     });
-    dragged.classList.remove("inactive__window");
-    dragged.classList.add("active__window");
-    dragging = true;
-    offset = [
-      dragged.offsetLeft - event.clientX,
-      dragged.offsetTop - event.clientY,
-      (dragged.offsetLeft + dragged.clientWidth - event.clientX) * -1,
-      (dragged.offsetTop + dragged.clientHeight - event.clientY) * -1
+    // make the dragged window active
+    osState.dragged.classList.remove("inactive__window");
+    osState.dragged.classList.add("active__window");
+    osState.dragging = true;
+    osState.offset = [
+      osState.dragged.offsetLeft - event.clientX,
+      osState.dragged.offsetTop - event.clientY,
+      (osState.dragged.offsetLeft +
+        osState.dragged.clientWidth -
+        event.clientX) *
+        -1,
+      (osState.dragged.offsetTop +
+        osState.dragged.clientHeight -
+        event.clientY) *
+        -1
     ];
   }
 }
 
+// handle window dragging
+// calculates new window position
 function handleDrag(event) {
   event.preventDefault();
-  if (dragging) {
-    mousePosition = {
+  if (osState.dragging) {
+    osState.mousePosition = {
       x: event.clientX,
       y: event.clientY
     };
-    let windowX = mousePosition.x + offset[0];
-    let windowY = mousePosition.y + offset[1];
+    let windowX = osState.mousePosition.x + osState.offset[0];
+    let windowY = osState.mousePosition.y + osState.offset[1];
     let windowXR =
-      (mousePosition.x - offset[2] - desktop.clientWidth - 60) * -1;
+      (osState.mousePosition.x -
+        osState.offset[2] -
+        osNodes.desktop.clientWidth -
+        60) *
+      -1;
     let windowYB =
-      (mousePosition.y - offset[3] - desktop.clientHeight - 30) * -1;
+      (osState.mousePosition.y -
+        osState.offset[3] -
+        osNodes.desktop.clientHeight -
+        30) *
+      -1;
     if (windowX < 65) {
       windowX = 65;
     }
@@ -94,131 +132,175 @@ function handleDrag(event) {
       windowYB = 5;
     }
     if (windowXR > 5) {
-      dragged.style.left = windowX + "px";
-      dragged.style.right = "unset";
+      osState.dragged.style.left = windowX + "px";
+      osState.dragged.style.right = "unset";
     } else {
-      dragged.style.right = windowXR + "px";
-      dragged.style.left = "unset";
+      osState.dragged.style.right = windowXR + "px";
+      osState.dragged.style.left = "unset";
     }
     if (windowYB > 5) {
-      dragged.style.bottom = "unset";
-      dragged.style.top = windowY + "px";
+      osState.dragged.style.bottom = "unset";
+      osState.dragged.style.top = windowY + "px";
     } else {
-      dragged.style.bottom = windowYB + "px";
-      dragged.style.top = "unset";
+      osState.dragged.style.bottom = windowYB + "px";
+      osState.dragged.style.top = "unset";
     }
-  } else if (resizing) {
+  } else if (osState.resizing) {
     let newHeight;
     let newWidth;
-    mousePosition = {
+    osState.mousePosition = {
       x: event.clientX,
       y: event.clientY
     };
-    if (mousePosition.x <= 70) {
-      mousePosition.x = 70;
+    if (osState.mousePosition.x <= 70) {
+      osState.mousePosition.x = 70;
     }
-    if (mousePosition.y <= 40) {
-      mousePosition.y = 40;
+    if (osState.mousePosition.y <= 40) {
+      osState.mousePosition.y = 40;
     }
-    if (mousePosition.y > window.innerHeight - 10) {
-      mousePosition.y = window.innerHeight - 10;
+    if (osState.mousePosition.y > window.innerHeight - 10) {
+      osState.mousePosition.y = window.innerHeight - 10;
     }
-    if (mousePosition.x > window.innerWidth - 10) {
-      mousePosition.x = window.innerWidth - 10;
+    if (osState.mousePosition.x > window.innerWidth - 10) {
+      osState.mousePosition.x = window.innerWidth - 10;
     }
     // BOTTOM AND BOTTOM CORNER RESIZING
     if (
-      resizeType.contains("window__resizer--bottom") ||
-      resizeType.contains("window__resizer--corner--right") ||
-      resizeType.contains("window__resizer--corner--left")
+      osState.resizeType.contains("window__resizer--bottom") ||
+      osState.resizeType.contains("window__resizer--corner--right") ||
+      osState.resizeType.contains("window__resizer--corner--left")
     ) {
-      let newHeight = resizedDimensions.h + (mousePosition.y - offsetResize[1]);
+      let newHeight =
+        osState.resizedDimensions.h +
+        (osState.mousePosition.y - osState.offsetResize[1]);
       let newWidth;
       if (newHeight < 200) {
         newHeight = 200;
       }
-      resized.style.height = newHeight + "px";
+      osState.resized.style.height = newHeight + "px";
       if (
-        resizeType.contains("window__resizer--corner--right") ||
-        resizeType.contains("window__resizer--corner--left")
+        osState.resizeType.contains("window__resizer--corner--right") ||
+        osState.resizeType.contains("window__resizer--corner--left")
       ) {
-        if (resizeType.contains("window__resizer--corner--right")) {
-          newWidth = resizedDimensions.w + (mousePosition.x - offsetResize[0]);
-        } else if (resizeType.contains("window__resizer--corner--left")) {
-          newWidth = resizedDimensions.w - (mousePosition.x - offsetResize[0]);
+        if (osState.resizeType.contains("window__resizer--corner--right")) {
+          newWidth =
+            osState.resizedDimensions.w +
+            (osState.mousePosition.x - osState.offsetResize[0]);
+        } else if (
+          osState.resizeType.contains("window__resizer--corner--left")
+        ) {
+          newWidth =
+            osState.resizedDimensions.w -
+            (osState.mousePosition.x - osState.offsetResize[0]);
         }
         if (newWidth < 300) {
           newWidth = 300;
-          if (resizeType.contains("window__resizer--corner--left")) {
-            resized.style.left =
-              resizedDimensions.l + (resizedDimensions.w - newWidth) + "px";
+          if (osState.resizeType.contains("window__resizer--corner--left")) {
+            osState.resized.style.left =
+              osState.resizedDimensions.l +
+              (osState.resizedDimensions.w - newWidth) +
+              "px";
           }
-        } else if (resizeType.contains("window__resizer--corner--left")) {
-          resized.style.left =
-            resizedDimensions.l + (mousePosition.x - offsetResize[0]) + "px";
+        } else if (
+          osState.resizeType.contains("window__resizer--corner--left")
+        ) {
+          osState.resized.style.left =
+            osState.resizedDimensions.l +
+            (osState.mousePosition.x - osState.offsetResize[0]) +
+            "px";
         }
-        resized.style.width = newWidth + "px";
+        osState.resized.style.width = newWidth + "px";
       }
     }
     // TOP AND TOP CORNER RESIZING
     else if (
-      resizeType.contains("window__resizer--top") ||
-      resizeType.contains("window__resizer--corner--right--top") ||
-      resizeType.contains("window__resizer--corner--left--top")
+      osState.resizeType.contains("window__resizer--top") ||
+      osState.resizeType.contains("window__resizer--corner--right--top") ||
+      osState.resizeType.contains("window__resizer--corner--left--top")
     ) {
-      let newHeight = resizedDimensions.h - (mousePosition.y - offsetResize[1]);
+      let newHeight =
+        osState.resizedDimensions.h -
+        (osState.mousePosition.y - osState.offsetResize[1]);
       let newWidth;
       if (newHeight < 200) {
         newHeight = 200;
-        resized.style.top =
-          resizedDimensions.t + (resizedDimensions.h - newHeight) + "px";
+        osState.resized.style.top =
+          osState.resizedDimensions.t +
+          (osState.resizedDimensions.h - newHeight) +
+          "px";
       } else {
-        resized.style.top =
-          resizedDimensions.t + (mousePosition.y - offsetResize[1]) + "px";
+        osState.resized.style.top =
+          osState.resizedDimensions.t +
+          (osState.mousePosition.y - osState.offsetResize[1]) +
+          "px";
       }
-      resized.style.height = newHeight + "px";
+      osState.resized.style.height = newHeight + "px";
       if (
-        resizeType.contains("window__resizer--corner--right--top") ||
-        resizeType.contains("window__resizer--corner--left--top")
+        osState.resizeType.contains("window__resizer--corner--right--top") ||
+        osState.resizeType.contains("window__resizer--corner--left--top")
       ) {
-        if (resizeType.contains("window__resizer--corner--right--top")) {
-          newWidth = resizedDimensions.w + (mousePosition.x - offsetResize[0]);
-        } else if (resizeType.contains("window__resizer--corner--left--top")) {
-          newWidth = resizedDimensions.w - (mousePosition.x - offsetResize[0]);
+        if (
+          osState.resizeType.contains("window__resizer--corner--right--top")
+        ) {
+          newWidth =
+            osState.resizedDimensions.w +
+            (osState.mousePosition.x - osState.offsetResize[0]);
+        } else if (
+          osState.resizeType.contains("window__resizer--corner--left--top")
+        ) {
+          newWidth =
+            osState.resizedDimensions.w -
+            (osState.mousePosition.x - osState.offsetResize[0]);
         }
         if (newWidth < 300) {
           newWidth = 300;
-          if (resizeType.contains("window__resizer--corner--left--top")) {
-            resized.style.left =
-              resizedDimensions.l + (resizedDimensions.w - newWidth) + "px";
+          if (
+            osState.resizeType.contains("window__resizer--corner--left--top")
+          ) {
+            osState.resized.style.left =
+              osState.resizedDimensions.l +
+              (osState.resizedDimensions.w - newWidth) +
+              "px";
           }
-        } else if (resizeType.contains("window__resizer--corner--left--top")) {
-          resized.style.left =
-            resizedDimensions.l + (mousePosition.x - offsetResize[0]) + "px";
+        } else if (
+          osState.resizeType.contains("window__resizer--corner--left--top")
+        ) {
+          osState.resized.style.left =
+            osState.resizedDimensions.l +
+            (osState.mousePosition.x - osState.offsetResize[0]) +
+            "px";
         }
-        resized.style.width = newWidth + "px";
+        osState.resized.style.width = newWidth + "px";
       }
     } else if (
-      resizeType.contains("window__resizer--right") ||
-      resizeType.contains("window__resizer--left")
+      osState.resizeType.contains("window__resizer--right") ||
+      osState.resizeType.contains("window__resizer--left")
     ) {
       let newWidth;
-      if (resizeType.contains("window__resizer--right")) {
-        newWidth = resizedDimensions.w + (mousePosition.x - offsetResize[0]);
-      } else if (resizeType.contains("window__resizer--left")) {
-        newWidth = resizedDimensions.w - (mousePosition.x - offsetResize[0]);
+      if (osState.resizeType.contains("window__resizer--right")) {
+        newWidth =
+          osState.resizedDimensions.w +
+          (osState.mousePosition.x - osState.offsetResize[0]);
+      } else if (osState.resizeType.contains("window__resizer--left")) {
+        newWidth =
+          osState.resizedDimensions.w -
+          (osState.mousePosition.x - osState.offsetResize[0]);
       }
       if (newWidth <= 300) {
         newWidth = 300;
-        if (resizeType.contains("window__resizer--left")) {
-          resized.style.left =
-            resizedDimensions.l + (resizedDimensions.w - newWidth) + "px";
+        if (osState.resizeType.contains("window__resizer--left")) {
+          osState.resized.style.left =
+            osState.resizedDimensions.l +
+            (osState.resizedDimensions.w - newWidth) +
+            "px";
         }
-      } else if (resizeType.contains("window__resizer--left")) {
-        resized.style.left =
-          resizedDimensions.l + (mousePosition.x - offsetResize[0]) + "px";
+      } else if (osState.resizeType.contains("window__resizer--left")) {
+        osState.resized.style.left =
+          osState.resizedDimensions.l +
+          (osState.mousePosition.x - osState.offsetResize[0]) +
+          "px";
       }
-      resized.style.width = newWidth + "px";
+      osState.resized.style.width = newWidth + "px";
     }
     // resized.childNodes[3].childNodes[1].innerText = resized.clientWidth;
     // resized.childNodes[3].childNodes[5].innerText = resized.clientHeight;
@@ -226,11 +308,11 @@ function handleDrag(event) {
 }
 
 function dragEnd(event) {
-  dragging = false;
-  dragged = undefined;
-  resized = undefined;
-  resizing = false;
-  resizedDimensions = {};
+  osState.dragging = false;
+  osState.dragged = undefined;
+  osState.resized = undefined;
+  osState.resizing = false;
+  osState.resizedDimensions = {};
 }
 
 // WINDOW FUNCTIONS
@@ -238,8 +320,9 @@ function dragEnd(event) {
 // MAKE WINDOW ACTIVE
 function checkActive(event) {
   event.preventDefault();
+  // check if window is active
   if (event.target.classList.contains("inactive__window")) {
-    windows.forEach(window => {
+    osNodes.windows.forEach(window => {
       window.classList.remove("active__window");
       window.classList.add("inactive__window");
     });
@@ -259,7 +342,7 @@ function checkActive(event) {
     event.target.classList.contains("window__content") ||
     event.target.classList.contains("window__resizer")
   ) {
-    windows.forEach(window => {
+    osNodes.windows.forEach(window => {
       window.classList.remove("active__window");
       window.classList.add("inactive__window");
     });
@@ -285,7 +368,7 @@ function selectWindow(event) {
     event.target.childNodes[3].classList.add("indicator--active");
     const windowId = event.target.dataset.windowId;
     const foundWindow = document.getElementById(windowId);
-    windows.forEach(window => {
+    osNodes.windows.forEach(window => {
       window.classList.remove("active__window");
       window.classList.add("inactive__window");
     });
@@ -322,7 +405,7 @@ function maximize(event) {
         }
       });
     }
-    windowSettings[windowId].position = {
+    osState.windowSettings[windowId].position = {
       left: selectedWindow.style.left,
       top: selectedWindow.style.top,
       h: selectedWindow.clientHeight,
@@ -353,12 +436,14 @@ function maximize(event) {
       });
     }
     selectedWindow.classList.remove("maximized");
-    selectedWindow.style.left = windowSettings[selectedWindow.id].position.left;
-    selectedWindow.style.top = windowSettings[selectedWindow.id].position.top;
+    selectedWindow.style.left =
+      osState.windowSettings[selectedWindow.id].position.left;
+    selectedWindow.style.top =
+      osState.windowSettings[selectedWindow.id].position.top;
     selectedWindow.style.height =
-      windowSettings[selectedWindow.id].position.h + "px";
+      osState.windowSettings[selectedWindow.id].position.h + "px";
     selectedWindow.style.width =
-      windowSettings[selectedWindow.id].position.w + "px";
+      osState.windowSettings[selectedWindow.id].position.w + "px";
   }
   // selectedWindow.childNodes[3].childNodes[1].innerText =
   //   selectedWindow.clientWidth;
@@ -418,16 +503,16 @@ function createNewWindow(event) {
   `;
   const newWindow = document.createElement("div");
   newWindow.classList.add("window", "active__window");
-  newWindow.id = `window__${windows.length + 1}`;
+  newWindow.id = `window__${osNodes.windows.length + 1}`;
   newWindow.innerHTML = windowTemplate;
-  desktop.appendChild(newWindow);
+  osNodes.desktop.appendChild(newWindow);
 
   const sideBarElement = document.createElement("div");
   sideBarElement.classList.add("open__item", "window__indicator");
-  sideBarElement.id = `window__${windows.length + 1}__sidebar`;
+  sideBarElement.id = `window__${osNodes.windows.length + 1}__sidebar`;
   sideBarElement.dataset.windowId = newWindow.id;
   sideBarElement.innerHTML = sidebarItem;
-  sidebar.appendChild(sideBarElement);
+  osNodes.sidebar.appendChild(sideBarElement);
   const sideBarElements = document.querySelectorAll(".window__indicator");
   sideBarElements.forEach(element => {
     element.childNodes[3].classList.remove("indicator--active");
@@ -450,21 +535,25 @@ function closeWindow(event) {
       }
     });
     setTimeout(() => {
-      desktop.removeChild(removedWindow);
+      osNodes.desktop.removeChild(removedWindow);
+      osNodes.resizers = document.querySelectorAll(".window__resizer");
+      processResizers();
       processWindows("closed");
     }, 300);
   }
 }
 
+// add event listeners to all windows and window controls.
+// used when new windows are created.
 function processWindows(newWindow) {
-  windows = document.querySelectorAll(".window");
-  maximizers = document.querySelectorAll(".maximizer");
-  minimizers = document.querySelectorAll(".minimizer");
-  closers = document.querySelectorAll(".close");
+  osNodes.windows = document.querySelectorAll(".window");
+  osNodes.maximizers = document.querySelectorAll(".maximizer");
+  osNodes.minimizers = document.querySelectorAll(".minimizer");
+  osNodes.closers = document.querySelectorAll(".close");
 
-  windows.forEach(window => {
+  osNodes.windows.forEach(window => {
     if (!newWindow) {
-      windowSettings[window.id] = {
+      osState.windowSettings[window.id] = {
         position: {
           left: 0,
           top: 0,
@@ -481,7 +570,7 @@ function processWindows(newWindow) {
     if (newWindow && newWindow !== "closed") {
       window.classList.remove("active__window");
       window.classList.add("inactive__window");
-      windowSettings[newWindow.id] = {
+      osState.windowSettings[newWindow.id] = {
         position: {
           left: newWindow.style.left,
           top: newWindow.style.top,
@@ -491,19 +580,21 @@ function processWindows(newWindow) {
       };
     }
 
-    resizers = document.querySelectorAll(".window__resizer");
+    osNodes.resizers = document.querySelectorAll(".window__resizer");
     processResizers();
   });
 
-  maximizers.forEach(maximizer =>
+  osNodes.maximizers.forEach(maximizer =>
     maximizer.addEventListener("click", maximize)
   );
 
-  minimizers.forEach(minimizer =>
+  osNodes.minimizers.forEach(minimizer =>
     minimizer.addEventListener("click", minimize)
   );
 
-  closers.forEach(closer => closer.addEventListener("click", closeWindow));
+  osNodes.closers.forEach(closer =>
+    closer.addEventListener("click", closeWindow)
+  );
 
   if (newWindow && newWindow !== "closed") {
     newWindow.classList.add("active__window");
@@ -519,7 +610,7 @@ setInterval(() => {
 
 // RESIZING
 function processResizers() {
-  resizers.forEach(resizer => {
+  osNodes.resizers.forEach(resizer => {
     resizer.addEventListener("mousedown", resizeStart);
     resizer.addEventListener("mouseup", resizeEnd);
   });
@@ -528,21 +619,21 @@ function processResizers() {
 processResizers();
 
 function resizeStart(event) {
-  resizing = true;
-  resized = event.target.parentNode;
-  resizeType = event.target.classList;
-  offsetResize = [event.clientX, event.clientY];
-  resizedDimensions = {
-    h: resized.clientHeight,
-    w: resized.clientWidth,
-    l: resized.offsetLeft,
-    t: resized.offsetTop
+  osState.resizing = true;
+  osState.resized = event.target.parentNode;
+  osState.resizeType = event.target.classList;
+  osState.offsetResize = [event.clientX, event.clientY];
+  osState.resizedDimensions = {
+    h: osState.resized.clientHeight,
+    w: osState.resized.clientWidth,
+    l: osState.resized.offsetLeft,
+    t: osState.resized.offsetTop
   };
 }
 
 function resizeEnd() {
-  resized = undefined;
-  resizing = false;
-  resizeType = undefined;
-  resizedDimensions = {};
+  osState.resized = undefined;
+  osState.resizing = false;
+  osState.resizeType = undefined;
+  osState.resizedDimensions = {};
 }
